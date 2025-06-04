@@ -4,7 +4,6 @@ from tree_sitter import Language, Parser
 import tree_sitter_ruby
 
 RUBY_LANGUAGE = Language(tree_sitter_ruby.language())
-
 parser = Parser()
 parser.language = RUBY_LANGUAGE
 
@@ -35,7 +34,7 @@ def extract_base_classes(class_node, code):
     superclass_node = class_node.child_by_field_name("superclass")
     if not superclass_node:
         return []
-    superclass_text = code[superclass_node.start_byte:superclass_node.end_byte]
+    superclass_text = code[superclass_node.start_byte+2:superclass_node.end_byte]
     # Split by ::, remove whitespace
     return [part.strip() for part in superclass_text.split("::")]
 
@@ -55,6 +54,8 @@ def parse_ruby_file(filepath: str, parser: Parser):
                 start_line = child.start_point[0] + 1
                 end_line = child.end_point[0] + 1
                 name_node = child.child_by_field_name("name")
+                if name_node==None:
+                    continue
                 name = code[name_node.start_byte:name_node.end_byte] if name_node else "anonymous"
 
                 snippet = code[child.start_byte:child.end_byte]
@@ -108,5 +109,5 @@ def main(codebase_path: str, output_file: str):
                 out_f.write(json.dumps(entry, ensure_ascii=False) + '\n')
     print(f"\n✅ Done! Output written to {output_file}")
 
-main("/Users/prashanna/PycharmProjects/semantic_ruby_code_base_search/ruby_project/eris/app/controllers", "cytiva.jsonl")
+main("/Users/prashanna/PycharmProjects/semantic_ruby_code_base_search/ruby_project/eris/app/controllers", "raw.jsonl")
 print("End")
