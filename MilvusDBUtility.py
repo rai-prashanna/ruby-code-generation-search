@@ -16,10 +16,15 @@ def transform_data_to_vector_embedding(text_representations:list,model) -> list:
 
 def transform_single_data_to_vector_embedding(text: str, model) -> list:
     print("Generating embedding for single text...")
-    vector_embedding = model.embed([text]) [0]# Assuming model.embed returns a list of embeddings
+    vector_embedding = model.embed([text][0])[0] # Assuming model.embed returns a list of embeddings
     print("Done with embedding process.")
     return vector_embedding
 
+def transform_query_to_vector_embedding(query: str, model) -> list:
+    print("Generating embedding for single text...")
+    vector_embedding = model.query_embed(query) # Assuming model.embed returns a list of embeddings
+    print("Done with embedding process.")
+    return list(vector_embedding)
 
 # def transform_data_to_vector_embedding(text_representation,model) -> list:
 #     vector_embeddings =model.embed(text_representation)
@@ -44,6 +49,12 @@ def create_collection_on_empty_db( collection_name = "milvus_llm_example"):
         collection_name = "milvus_llm_example"
         create_collection(collection_name)
         print(f"Collection named {collection_name} created!")
+
+def load_connection(collection_name)-> Collection:
+    create_connection()
+    collection = Collection(collection_name)
+    collection.load()
+    return collection
 
 def create_collection( collection_name) -> Collection:
     create_connection()

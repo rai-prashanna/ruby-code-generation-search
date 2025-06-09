@@ -67,20 +67,68 @@ def transform_data_to_vector_embedding(text_representations:list,model) -> list:
 
 
 code_meta_datas,code_snippets=load_json_into_memory("raw.jsonl")
-natural_language_representations = list(map(generate_prompt_from_code_metadata, code_meta_datas))
-print("Done with generating text representations...")
-
-print("Generating Natural language embedding ...")
+natural_language_representations = list(tqdm(map(generate_prompt_from_code_metadata, code_meta_datas)))
 natural_language_model = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2", threads=0)
-natural_language_vector_embedding=transform_data_to_vector_embedding(natural_language_representations, natural_language_model)
-print("Generating Code embedding ...")
 code_model = TextEmbedding("jinaai/jina-embeddings-v2-base-code", threads=0)
-code_snippets_vector_embedding=transform_data_to_vector_embedding(code_snippets, code_model)
+
+# print("Done with generating text representations...")
+# print("Generating Natural language embedding ...")
+# natural_language_vector_embedding=transform_data_to_vector_embedding(natural_language_representations, natural_language_model)
+# print("Generating Code embedding ...")
+# code_snippets_vector_embedding=transform_data_to_vector_embedding(code_snippets, code_model)
+# print("Create collection or load collection ...")
+# collection_name="temp"
+# my_collection=MilvusDBUtility.create_collection(collection_name)
+# MilvusDBUtility.batch_upload(my_collection, natural_language_vector_embedding, code_snippets_vector_embedding, code_meta_datas, 5)
+# my_collection.release()
+
+
+# natural_language_model = TextEmbedding("sentence-transformers/all-MiniLM-L6-v2", threads=0)
+# code_model = TextEmbedding("jinaai/jina-embeddings-v2-base-code", threads=0)
 print("Create collection or load collection ...")
 collection_name="temp"
-my_collection=MilvusDBUtility.create_collection(collection_name)
-MilvusDBUtility.batch_upload(my_collection, natural_language_vector_embedding, code_snippets_vector_embedding, code_meta_datas, 5)
+my_collection=MilvusDBUtility.load_connection(collection_name)
+# MilvusDBUtility.batch_upload(my_collection, natural_language_vector_embedding, code_snippets_vector_embedding, code_meta_datas, 5)
+query = "How to create scheduling works?"
+natural_language_query_vec = MilvusDBUtility.transform_query_to_vector_embedding(query, natural_language_model)
+code_query_vec = MilvusDBUtility.transform_query_to_vector_embedding(query, code_model)
 
+natural_lang_results = my_collection.search(
+    data=natural_language_query_vec,
+    anns_field="text_embedding",
+    param={"metric_type": "IP", "params": {"nprobe": 10}},
+    limit=5,
+    output_fields=["code_metadata"],  # you’ll get back the serialized structure JSON
+)
+
+sorted_natural_lang_results = sorted(natural_lang_results[0], key=lambda x: x.score, reverse=True)
+
+code_results = my_collection.search(
+    data=code_query_vec,
+    anns_field="code_embedding",
+    param={"metric_type": "IP", "params": {"nprobe": 10}},
+    limit=5,
+    output_fields=["code_metadata"],  # you’ll get back the serialized structure JSON
+)
+
+sorted_code_results = sorted(code_results[0], key=lambda x: x.score, reverse=True)
+
+print("search result using natural_language model ")
+
+for hit in sorted_natural_lang_results:
+    print(f"Score: {hit.score:.4f}")
+    print("Payload:", json.loads(hit.entity.get("code_metadata")))
+    print("─" * 40)
+
+print(".............")
+
+print("search result using code model")
+
+for hit in sorted_code_results:
+    print(f"Score: {hit.score:.4f}")
+    print("Payload:", json.loads(hit.entity.get("code_metadata")))
+    print("─" * 40)
+my_collection.release()
 print("Done...")
 
 
