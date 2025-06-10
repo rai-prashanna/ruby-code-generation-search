@@ -59,12 +59,12 @@ def load_connection(collection_name)-> Collection:
 def create_collection( collection_name) -> Collection:
     create_connection()
     dim=768
-    dim_text = 384  # e.g. "all-MiniLM-L6-v2" outputs 384‐dim vectors
+    dim_text = 3072  # e.g. "all-MiniLM-L6-v2" outputs 384‐dim vectors
     dim_code = 768  # e.g. "jinaai/jina-embeddings-v2-base-code" outputs 768‐dim
     # FieldSchema(name="id", dtype=DataType.INT64, is_primary=True, auto_id=True),
     fields = [ FieldSchema( name="ids", dtype=DataType.VARCHAR, is_primary=True,auto_id=False, max_length=36),
         FieldSchema(name="text_embedding", dtype=DataType.FLOAT_VECTOR, dim=dim_text),
-        FieldSchema(name="code_embedding", dtype=DataType.FLOAT_VECTOR, dim=dim_code),
+        FieldSchema(name="code_embedding", dtype=DataType.FLOAT_VECTOR, dim=dim_text),
         FieldSchema(name="code_metadata", dtype=DataType.VARCHAR,max_length=65534),
     ]
     schema = CollectionSchema(fields, f" stores both text & code embeddings with code-metadata")
